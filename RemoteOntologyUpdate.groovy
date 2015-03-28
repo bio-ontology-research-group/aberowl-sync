@@ -1,6 +1,5 @@
 /**
- * The RemoteOntologyManager uses bioportal to keep a list of ontologies up to
- * date.
+ * The RemoteOntologyUpdate trolls through the existing ontology database and updates those which need updating.
  */
 @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7' )
 @Grab(group='redis.clients', module='jedis', version='2.6.2')
@@ -9,7 +8,7 @@ import groovyx.net.http.HTTPBuilder
 import java.text.SimpleDateFormat
 import db.*
 
-class RemoteOntologyManager {
+class RemoteOntologyUpdate {
   public final static String API_ROOT = 'http://data.bioontology.org/'
   public final static String API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
   def oBase
