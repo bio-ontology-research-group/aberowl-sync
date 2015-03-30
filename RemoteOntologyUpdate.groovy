@@ -10,17 +10,19 @@ import db.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
+String ABEROWL_API = 'http://localhost/api/'
 
-def oBase = new OntologyDaatabase()
+def oBase = new OntologyDatabase()
 def allOnts = oBase.allOntologies()
+def updated = []
 
 allOnts.each { oRec ->
   if(oRec.source == 'manual') {
     return;
   } else if(oRec.source == 'bioportal') {
     try {
-      new HTTPBuilder().get( uri: BIO_API_ROUTE + 'ontologies/' + oRec.id + '/submissions', query: [ 'apikey': BIO_API_KEY ] ) { eResp, submissions ->
-        println '[' + resp.status + '] ' + ont.links.submissions
+      new HTTPBuilder().get( uri: BIO_API_ROOT + 'ontologies/' + oRec.id + '/submissions', query: [ 'apikey': BIO_API_KEY ] ) { eResp, submissions ->
+        println '[' + eResp.status + '] ' + oRec.id
         if(!submissions[0]) {
           return;
         }
@@ -28,23 +30,34 @@ allOnts.each { oRec ->
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
         def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000;
         
-        if(lastSubDate > exOnt.lastSubDate) {
-          exOnt.addNewSubmission([
+        if(lastSubDate > oRec.lastSubDate) {
+          oRec.addNewSubmission([
             'released': lastSubDate,
-            'download': ont.links.download
+            'download': submissions[0].ontology.links.download
           ]) 
 
-          println '[' + ont.acronym + '] Adding new version'
+          updated.add(oRec.id)
+
+          println '[' + oRec.id + '] Adding new version'
         } else {
-          println '[' + ont.acronym + '] Nothing new to report'
+          println '[' + oRec.id + '] Nothing new to report'
         }
 
-        oBase.saveOntology(exOnt)
+        oBase.saveOntology(oRec)
       }
     } catch(groovyx.net.http.HttpResponseException e) {
       println "Ontology disappeared"
+    } catch(java.net.SocketException e) {
+      println "idk"
     }
   } else { // try it as a url
     
   }
 }
+
+updated.each { id ->
+  new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
+    println "Updated " + id
+  }
+}
+
