@@ -5,12 +5,15 @@
 @Grab(group='redis.clients', module='jedis', version='2.6.2')
 
 import groovyx.net.http.HTTPBuilder
+import groovyx.net.http.RESTClient
+import static groovyx.net.http.Method.HEAD
+import static groovyx.net.http.ContentType.TEXT
 import java.text.SimpleDateFormat
 import db.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
-String ABEROWL_API = 'http://localhost/api/'
+String ABEROWL_API = 'http://localhost:8080/api/'
 
 def oBase = new OntologyDatabase()
 def allOnts = oBase.allOntologies()
@@ -24,6 +27,7 @@ allOnts.each { oRec ->
       new HTTPBuilder().get( uri: BIO_API_ROOT + 'ontologies/' + oRec.id + '/submissions', query: [ 'apikey': BIO_API_KEY ] ) { eResp, submissions ->
         println '[' + eResp.status + '] ' + oRec.id
         if(!submissions[0]) {
+          println "No releases"
           return;
         }
 
@@ -50,8 +54,12 @@ allOnts.each { oRec ->
     } catch(java.net.SocketException e) {
       println "idk"
     }
-  } else { // try it as a url
-    
+  } else if(oRec.source != null) { // try it as a url
+    // We just attempt to add the new submission, since that will check if it is new or not
+    oRec.addNewSubmission([
+      'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
+      'download': oRec.source
+    ]) 
   }
 }
 
