@@ -22,7 +22,8 @@ new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API
       println "Creating " + ont.acronym
       exOnt = oBase.createOntology([
         'id': ont.acronym,
-        'name': ont.name
+        'name': ont.name,
+        'source': 'bioportal'
       ])
 
       try {
