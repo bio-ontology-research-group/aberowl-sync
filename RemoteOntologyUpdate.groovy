@@ -20,6 +20,7 @@ def allOnts = oBase.allOntologies()
 def updated = []
 
 allOnts.each { oRec ->
+  oRec.source = 'bioportal' // TODO: Remove
   if(oRec.source == 'manual') {
     return;
   } else if(oRec.source == 'bioportal') {
@@ -34,7 +35,7 @@ allOnts.each { oRec ->
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
         def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000;
         
-        if(lastSubDate > oRec.submissions.last().time) {
+        if(oRec.submissions.size() == 0 || (oRec.submissions.size() > 0 && lastSubDate > oRec.submissions.last().time)) {
           oRec.addNewSubmission([
             'released': lastSubDate,
             'download': submissions[0].ontology.links.download
