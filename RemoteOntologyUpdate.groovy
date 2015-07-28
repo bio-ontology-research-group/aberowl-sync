@@ -34,7 +34,7 @@ allOnts.each { oRec ->
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
         def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000;
         
-        if(lastSubDate > oRec.lastSubDate) {
+        if(lastSubDate > oRec.submissions.last().time) {
           oRec.addNewSubmission([
             'released': lastSubDate,
             'download': submissions[0].ontology.links.download
