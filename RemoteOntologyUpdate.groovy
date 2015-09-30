@@ -13,7 +13,7 @@ import db.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
-String ABEROWL_API = 'http://localhost:8080/api/'
+String ABEROWL_API = 'http://localhost/api/'
 
 def oBase = new OntologyDatabase()
 def allOnts = oBase.allOntologies()
@@ -53,6 +53,8 @@ allOnts.each { oRec ->
       println "Ontology disappeared"
     } catch(java.net.SocketException e) {
       println "idk"
+    } catch(Exception e) {
+      e.printStackTrace()
     }
   } else if(oRec.source != null) { // try it as a url
     // We just attempt to add the new submission, since that will check if it is new or not
