@@ -10,7 +10,7 @@ import db.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
-String ABEROWL_API = 'http://localhost/api/'
+String ABEROWL_API = 'http://localhost:55556/api/'
 
 def oBase = new OntologyDatabase()
 def newO = []

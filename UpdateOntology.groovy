@@ -65,11 +65,14 @@ if (oRec) {
       e.printStackTrace()
     }
   } else if(oRec.source != null) { // try it as a url
+    println "Getting from "+oRec.source
     // We just attempt to add the new submission, since that will check if it is new or not
     oRec.addNewSubmission([
       'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
       'download': oRec.source
     ]) 
+    oBase.saveOntology(oRec)
+    updated.add(oRec.id)
   }
 }
 

@@ -13,7 +13,7 @@ import db.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
-String ABEROWL_API = 'http://localhost:55556/api/'
+String ABEROWL_API = 'http://localhost:55555/api/'
 
 def oBase = new OntologyDatabase()
 def allOnts = oBase.allOntologies()
@@ -40,12 +40,11 @@ allOnts.each { oRec ->
             'download': submissions[0].ontology.links.download
           ]) 
 
-          updated.add(oRec.id)
-
           println '[' + oRec.id + '] Adding new version'
         } else {
           println '[' + oRec.id + '] Nothing new to report'
         }
+	updated.add(oRec.id)
 
         oBase.saveOntology(oRec)
       }
@@ -62,8 +61,6 @@ allOnts.each { oRec ->
       'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
       'download': oRec.source
     ]) 
-    oBase.saveOntology(oRec)
-    updated.add(oRec.id)
   }
 }
 
