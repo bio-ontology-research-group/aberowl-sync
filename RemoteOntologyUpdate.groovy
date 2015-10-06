@@ -13,11 +13,12 @@ import db.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
-String ABEROWL_API = 'http://localhost:55556/api/'
+String ABEROWL_API = 'http://aber-owl.net/service/api/'
 
 def oBase = new OntologyDatabase()
 def allOnts = oBase.allOntologies()
 def updated = []
+def updatedUrl = []
 
 allOnts.each { oRec ->
   if(oRec.source == 'manual') {
@@ -63,13 +64,28 @@ allOnts.each { oRec ->
       'download': oRec.source
     ]) 
     oBase.saveOntology(oRec)
-    updated.add(oRec.id)
+    updatedUrl.add(oRec.id)
   }
 }
 
+println "Updating ontologies obtained from BioPortal"
 updated.each { id ->
-  new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
-    println "Updated " + id
+  try {
+    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
+      println "Updated " + id
+    }
+  } catch (Exception E) {
+    println "$id failed update: "+E
+  }
+}
+println "Updating ontologies obtained directly from URL"
+updatedUrl.each { id ->
+  try {
+    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
+      println "Updated " + id
+    }
+  } catch (Exception E) {
+    println "$id failed update: "+E
   }
 }
 
