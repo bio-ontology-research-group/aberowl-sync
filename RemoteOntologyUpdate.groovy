@@ -10,10 +10,15 @@ import static groovyx.net.http.Method.HEAD
 import static groovyx.net.http.ContentType.TEXT
 import java.text.SimpleDateFormat
 import db.*
+import groovy.json.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
 String ABEROWL_API = 'http://aber-owl.net/service/api/'
+String OBOFOUNDRY_FILE = "http://www.obofoundry.org/registry/ontologies.jsonld"
+
+def slurper = new JsonSlurper()
+def obo = slurper.parse(new URL(OBOFOUNDRY_FILE))
 
 def oBase = new OntologyDatabase()
 def allOnts = oBase.allOntologies()
@@ -57,6 +62,15 @@ allOnts.each { oRec ->
     } catch(Exception e) {
       e.printStackTrace()
     }
+  } else if(oRec.source == 'obofoundry') {
+    obo.ontologies.findAll { it.id == oRec.id }.each { ont ->
+      updatedUrl.add(oRec.id)
+      oRec.addNewSubmission([
+			      'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
+			     'download': ont.ontology_purl
+			    ]) 
+      oBase.saveOntology(oRec)
+    }
   } else if(oRec.source != null) { // try it as a url
     // We just attempt to add the new submission, since that will check if it is new or not
     oRec.addNewSubmission([
@@ -64,7 +78,6 @@ allOnts.each { oRec ->
       'download': oRec.source
     ]) 
     oBase.saveOntology(oRec)
-    updatedUrl.add(oRec.id)
   }
 }
 
@@ -80,6 +93,7 @@ updated.each { id ->
 }
 println "Updating ontologies obtained directly from URL"
 updatedUrl.each { id ->
+  println "Updating $id from URL..."
   try {
     new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
       println "Updated " + id

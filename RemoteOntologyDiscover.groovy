@@ -10,7 +10,7 @@ import db.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
-String ABEROWL_API = 'http://localhost:55556/api/'
+String ABEROWL_API = 'http://aber-owl.net/service/api/'
 
 def oBase = new OntologyDatabase()
 def newO = []
@@ -18,7 +18,7 @@ def newO = []
 new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API_KEY ]) { resp, ontologies ->
   ontologies.each { ont ->
     def exOnt = oBase.getOntology(ont.acronym)
-    if(!exOnt) {
+    if(!exOnt && ont.name.toLowerCase().indexOf("poker")==-1 && ont.acronym.toLowerCase().indexOf("poker")==-1) {
       println "Creating " + ont.acronym
       exOnt = oBase.createOntology([
         'id': ont.acronym,
