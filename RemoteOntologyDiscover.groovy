@@ -15,6 +15,7 @@ String ABEROWL_API = 'http://localhost:55556/api/'
 def oBase = new OntologyDatabase()
 def newO = []
 
+// Get Bioportal ontologies
 new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API_KEY ]) { resp, ontologies ->
   ontologies.each { ont ->
     def exOnt = oBase.getOntology(ont.acronym)
@@ -22,19 +23,24 @@ new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API
       println "Creating " + ont.acronym
       exOnt = oBase.createOntology([
         'id': ont.acronym,
-        'name': ont.name
+        'name': ont.name,
+        'source': 'bioportal'
       ])
 
       try {
         new HTTPBuilder().get(uri: BIO_API_ROOT+'ontologies/'+exOnt.id+'/submissions', query: [ 'apikey': BIO_API_KEY ]) { eResp, submissions ->
           if(submissions[0]) {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm")
-            def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000
+            def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000 // /
 
             exOnt.addNewSubmission([
               'released': lastSubDate,
               'download': submissions[0].ontology.links.download
             ])
+
+            if(submissions[0].description) {
+              exOnt.description = submissions[0].description
+            }
 
             newO.add(exOnt.id)
             oBase.saveOntology(exOnt)

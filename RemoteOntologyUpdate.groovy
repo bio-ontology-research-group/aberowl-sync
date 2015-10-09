@@ -33,13 +33,17 @@ allOnts.each { oRec ->
         }
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
-        def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000;
+        def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000; // /
         
         if(lastSubDate > oRec.lastSubDate) {
           oRec.addNewSubmission([
             'released': lastSubDate,
             'download': submissions[0].ontology.links.download
           ]) 
+
+          if(submissions[0].description) {
+            exOnt.description = submissions[0].description
+          }
 
           updated.add(oRec.id)
 
@@ -60,7 +64,7 @@ allOnts.each { oRec ->
   } else if(oRec.source != null) { // try it as a url
     // We just attempt to add the new submission, since that will check if it is new or not
     oRec.addNewSubmission([
-      'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
+      'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though) /
       'download': oRec.source
     ]) 
     oBase.saveOntology(oRec)
