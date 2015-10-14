@@ -43,6 +43,9 @@ new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API
             }
 
             newO.add(exOnt.id)
+	    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
+	      println "Updated " + exOnt.id
+	    }
             oBase.saveOntology(exOnt)
           }
         }
@@ -51,12 +54,8 @@ new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API
       } catch(java.net.SocketException e) {
         println "idk"
       }
-    }
-  }
-
-  newO.each { id ->
-    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
-      println "Updated " + id
+    } else {
+      println exOnt.id + " already exists in AberOWL"
     }
   }
 }
