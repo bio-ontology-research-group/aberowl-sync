@@ -47,33 +47,45 @@ allOnts.each { oRec ->
           ]) 
 
           if(submissions[0].description) {
-            exOnt.description = submissions[0].description
+            oRec.description = submissions[0].description
           }
 
-          updated.add(oRec.id)
-
-          println '[' + oRec.id + '] Adding new version'
+	  try {
+	    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
+	      println "Updated " + id
+	    }
+	    oBase.saveOntology(oRec)
+	  } catch (Exception E) {
+	    println "$id failed update: "+E
+	  }
+          println '[' + oRec.id + '] Added new version'
         } else {
           println '[' + oRec.id + '] Nothing new to report'
         }
-
-        oBase.saveOntology(oRec)
       }
     } catch(groovyx.net.http.HttpResponseException e) {
       println "Ontology disappeared"
     } catch(java.net.SocketException e) {
-      println "idk"
+      println "Socket exception"
     } catch(Exception e) {
       e.printStackTrace()
     }
   } else if(oRec.source == 'obofoundry') {
-    obo.ontologies.findAll { it.id == oRec.id }.each { ont ->
-      updatedUrl.add(oRec.id)
-      oRec.addNewSubmission([
-			      'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
-			     'download': ont.ontology_purl
-			    ]) 
-      oBase.saveOntology(oRec)
+    obo.ontologies.findAll { it.id?.toLowerCase() == oRec.id?.toLowerCase() }.each { ont ->
+      if (ont.description && ont.description.length()>0 && ont.description != oRec.description) {
+	oRec.description = ont.description
+	oBase.saveOntology(oRec)
+      }
+      try {
+	oRec.addNewSubmission([
+				'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
+			       'download': ont.ontology_purl
+			      ]) 
+	new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
+	  println "Updated " + oRec.id
+	}
+	oBase.saveOntology(oRec)
+      } catch (Exception E) {}
     }
   } else if(oRec.source != null) { // try it as a url
     // We just attempt to add the new submission, since that will check if it is new or not
@@ -85,6 +97,7 @@ allOnts.each { oRec ->
   }
 }
 
+/*
 println "Updating ontologies obtained from BioPortal"
 updated.each { id ->
   try {
@@ -107,3 +120,4 @@ updatedUrl.each { id ->
   }
 }
 
+*/
