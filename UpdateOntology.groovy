@@ -69,7 +69,7 @@ if (oRec) {
     // We just attempt to add the new submission, since that will check if it is new or not
     oRec.addNewSubmission([
       'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
-      'download': oRec.source
+			   'download': oRec.source?.trim()
     ]) 
     oBase.saveOntology(oRec)
     updated.add(oRec.id)

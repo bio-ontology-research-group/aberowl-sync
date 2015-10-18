@@ -51,12 +51,12 @@ allOnts.each { oRec ->
           }
 
 	  try {
-	    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
-	      println "Updated " + id
+	    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
+	      println "Updated " + oRec.id
 	    }
 	    oBase.saveOntology(oRec)
 	  } catch (Exception E) {
-	    println "$id failed update: "+E
+	    println oRec.id+" failed update: "+E
 	  }
           println '[' + oRec.id + '] Added new version'
         } else {

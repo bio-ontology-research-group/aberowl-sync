@@ -28,21 +28,20 @@ def updatedUrl = []
 allOnts.each { oRec ->
   if(oRec.source == 'obofoundry') {
     obo.ontologies.findAll { it.id?.toLowerCase() == oRec.id?.toLowerCase() }.each { ont ->
-      updatedUrl.add(oRec.id)
+      if (ont.description && ont.description.length()>0 && ont.description != oRec.description) {
+	oRec.description = ont.description
+	oBase.saveOntology(oRec)
+      }
       try {
 	oRec.addNewSubmission([
 				'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
 			       'download': ont.ontology_purl
 			      ]) 
-	oBase.saveOntology(oRec)
-      } catch (Exception E) {}
-      try {
 	new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
 	  println "Updated " + oRec.id
 	}
-      } catch (Exception E) {
-	println "$id failed update: "+E
-      }
+	oBase.saveOntology(oRec)
+      } catch (Exception E) {}
     }
   } 
 }

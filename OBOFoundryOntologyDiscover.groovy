@@ -26,6 +26,7 @@ obo.ontologies.each { ontology ->
   if(!exOnt && purl) { // if new, and has download link
     println "Creating " + id
     try {
+      exOnt.purl = purl
       exOnt = oBase.createOntology([
 				     'id': id,
 				    'name': title,
@@ -38,15 +39,31 @@ obo.ontologies.each { ontology ->
 			     ])
 
       oBase.saveOntology(exOnt)
+      new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
+	println "Updated " + exOnt.id
+      }
       newO.add(exOnt.id)
     } catch (Exception E) {
       println "Failure to download $id"
     }
-  }
-}
-
-newO.each { id ->
-  new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': id ] ) { r, s ->
-    println "Updated " + id
+  } else if (exOnt && exOnt.source != 'obofoundry' && purl) {
+    println exOnt.id + " not set to OBO Foundry source, but OBO purl available; updates source..."
+    try {
+      exOnt.source = 'obofoundry'
+      if (description && description.length()>0) {
+	exOnt.description = description
+      }
+      exOnt.purl = purl
+      exOnt.addNewSubmission([
+			       'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
+			      'download': purl
+			     ])
+      new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
+	println "Updated " + exOnt.id
+      }
+      oBase.saveOntology(exOnt)
+    } catch (Exception E) {
+      println "Error loading "+exOnt.id+": "+E
+    }
   }
 }
