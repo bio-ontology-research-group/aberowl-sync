@@ -34,8 +34,8 @@ new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API
             def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000 // /
 
             exOnt.addNewSubmission([
-              'released': lastSubDate,
-              'download': submissions[0].ontology.links.download
+				     'released': lastSubDate,
+				    'download': submissions[0].ontology.links.download?.trim()
             ])
 
             if(submissions[0].description) {

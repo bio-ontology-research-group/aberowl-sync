@@ -42,8 +42,8 @@ allOnts.each { oRec ->
         
         if(lastSubDate > oRec.lastSubDate) {
           oRec.addNewSubmission([
-            'released': lastSubDate,
-            'download': submissions[0].ontology.links.download
+				  'released': lastSubDate,
+				 'download': submissions[0].ontology.links.download?.trim()
           ]) 
 
           if(submissions[0].description) {
@@ -76,10 +76,14 @@ allOnts.each { oRec ->
 	oRec.description = ont.description
 	oBase.saveOntology(oRec)
       }
+      if (ont.title && ont.title.length()>0 && ont.title != oRec.name) {
+	oRec.name = ont.title
+	oBase.saveOntology(oRec)
+      }
       try {
 	oRec.addNewSubmission([
 				'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
-			       'download': ont.ontology_purl
+			       'download': ont.ontology_purl?.trim()
 			      ]) 
 	new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
 	  println "Updated " + oRec.id
@@ -89,11 +93,15 @@ allOnts.each { oRec ->
     }
   } else if(oRec.source != null) { // try it as a url
     // We just attempt to add the new submission, since that will check if it is new or not
-    oRec.addNewSubmission([
-      'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though) /
-      'download': oRec.source
-    ]) 
-    oBase.saveOntology(oRec)
+    try {
+      oRec.addNewSubmission([
+			      'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though) /
+			     'download': oRec.source?.trim()
+			    ]) 
+      oBase.saveOntology(oRec)
+    } catch (Exception E) {
+      println "Failure do download "+oRec.id+" from "+oRec.source
+    }
   }
 }
 
