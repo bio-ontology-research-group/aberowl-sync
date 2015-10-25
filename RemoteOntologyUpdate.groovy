@@ -14,7 +14,8 @@ import groovy.json.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
-String ABEROWL_API = 'http://aber-owl.net/service/api/'
+List<String> ABEROWL_API = ['http://aber-owl.net/service/api/', 'http://aber-owl.net:55555/api/']
+//String ABEROWL_API = 'http://aber-owl.net/service/api/'
 String OBOFOUNDRY_FILE = "http://www.obofoundry.org/registry/ontologies.jsonld"
 
 def slurper = new JsonSlurper()
@@ -51,8 +52,10 @@ allOnts.each { oRec ->
           }
 
 	  try {
-	    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
-	      println "Updated " + oRec.id
+	    ABEROWL_API.each {
+	      new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
+		println "Updated " + oRec.id
+	      }
 	    }
 	    oBase.saveOntology(oRec)
 	  } catch (Exception E) {
@@ -80,13 +83,16 @@ allOnts.each { oRec ->
 	oRec.name = ont.title
 	oBase.saveOntology(oRec)
       }
+      def purl = "http://purl.obolibrary.org/obo/"+ont.id?.toLowerCase()+".owl"
       try {
 	oRec.addNewSubmission([
 				'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
-			       'download': ont.ontology_purl?.trim()
+			       'download': purl
 			      ]) 
-	new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
-	  println "Updated " + oRec.id
+	ABEROWL_API.each {
+	  new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
+	    println "Updated " + oRec.id
+	  }
 	}
 	oBase.saveOntology(oRec)
       } catch (Exception E) {}

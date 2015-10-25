@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat
 import db.*
 import groovy.json.*
 
-String ABEROWL_API = 'http://aber-owl.net/service/api/'
+List<String> ABEROWL_API = ['http://aber-owl.net/service/api/', 'http://aber-owl.net:55555/api/']
 
 def slurper = new JsonSlurper()
 def obo = slurper.parse(new URL("http://www.obofoundry.org/registry/ontologies.jsonld"))
@@ -21,30 +21,34 @@ obo.ontologies.each { ontology ->
   def id = ontology.id?.toUpperCase()
   def title = ontology.title
   def description = ontology.description?:""
-  def purl = ontology.ontology_purl
+  def purl = "http://purl.obolibrary.org/obo/"+id.toLowerCase()+".owl"
   def exOnt = oBase.getOntology(id)
   if(!exOnt && purl) { // if new, and has download link
     println "Creating " + id
     try {
-      exOnt.purl = purl
       exOnt = oBase.createOntology([
 				     'id': id,
 				    'name': title,
 				    'description': description,
-				    'source': 'obofoundry',
+				    'source': 'obofoundry'
 				   ])
+      println "Downloading from $purl..."
       exOnt.addNewSubmission([
 			       'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
 			      'download': purl
 			     ])
 
+      exOnt.purl = purl
       oBase.saveOntology(exOnt)
-      new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
-	println "Updated " + exOnt.id
+      ABEROWL_API.each {
+	new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
+	  println "Updated " + exOnt.id
+	}
       }
       newO.add(exOnt.id)
     } catch (Exception E) {
-      println "Failure to download $id"
+      E.printStackTrace()
+      println "Failure to download $id: $E"
     }
   } else if (exOnt && exOnt.source != 'obofoundry' && purl) {
     println exOnt.id + " not set to OBO Foundry source, but OBO purl available; updates source..."
@@ -58,8 +62,31 @@ obo.ontologies.each { ontology ->
 			       'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
 			      'download': purl
 			     ])
-      new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
-	println "Updated " + exOnt.id
+      ABEROWL_API.each {
+	new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
+	  println "Updated " + exOnt.id
+	}
+      }
+      oBase.saveOntology(exOnt)
+    } catch (Exception E) {
+      println "Error loading "+exOnt.id+": "+E
+    }
+  } else if (exOnt.source == 'obofoundry' && exOnt.purl!=purl) { // purl changed (should not happen, only in first run)
+    println exOnt.id + " purl changed, updating..."
+    try {
+      exOnt.source = 'obofoundry'
+      if (description && description.length()>0) {
+	exOnt.description = description
+      }
+      exOnt.purl = purl
+      exOnt.addNewSubmission([
+			       'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though)
+			      'download': purl
+			     ])
+      ABEROWL_API.each {
+	new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
+	  println "Updated " + exOnt.id
+	}
       }
       oBase.saveOntology(exOnt)
     } catch (Exception E) {
