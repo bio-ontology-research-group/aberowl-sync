@@ -40,28 +40,46 @@ allOnts.each { oRec ->
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
         def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000; // /
-        
+
         if(lastSubDate > oRec.lastSubDate) {
           oRec.addNewSubmission([
-				  'released': lastSubDate,
-				 'download': submissions[0].ontology.links.download?.trim()
+            'released': lastSubDate,
+		    'download': submissions[0].ontology.links.download?.trim()
           ]) 
 
           if(submissions[0].description) {
             oRec.description = submissions[0].description
           }
+          if(submissions[0].homepage) {
+            oRec.homepage = submissions[0].homepage
+          }
+          if(submissions[0].contact) {
+            oRec.contact = []
+            submissions[0].contact.each { oRec.contact << it.email }
+          }
 
-	  try {
-	    ABEROWL_API.each {
-	      new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
-		println "Updated " + oRec.id
-	      }
-	    }
-	    oBase.saveOntology(oRec)
-	  } catch (Exception E) {
-	    println oRec.id+" failed update: "+E
-	  }
+          try {
+            ABEROWL_API.each {
+              new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
+                println "Updated " + oRec.id
+              }
+            }
+            oBase.saveOntology(oRec)
+          } catch (Exception E) {
+            println oRec.id+" failed update: "+E
+          }
+
           println '[' + oRec.id + '] Added new version'
+        } else if(!oRec.contact || !oRec.homepage) { // naughty patch codeZ
+          if(submissions[0].homepage) {
+            oRec.homepage = submissions[0].homepage
+          }
+          if(submissions[0].contact) {
+            oRec.contact = []
+            submissions[0].contact.each { oRec.contact << it.email }
+          }
+          oBase.saveOntology(oRec)
+          println '[' + oRec.id + '] Added new metadata'
         } else {
           println '[' + oRec.id + '] Nothing new to report'
         }

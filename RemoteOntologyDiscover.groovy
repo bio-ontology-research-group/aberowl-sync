@@ -16,7 +16,9 @@ def oBase = new OntologyDatabase()
 def newO = []
 
 // Get Bioportal ontologies
+println 'getting the list'
 new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API_KEY ]) { resp, ontologies ->
+println 'got the list'
   ontologies.each { ont ->
     def exOnt = oBase.getOntology(ont.acronym)
     if(!exOnt && ont.name.toLowerCase().indexOf("poker")==-1 && ont.acronym.toLowerCase().indexOf("poker")==-1) {
@@ -34,18 +36,26 @@ new HTTPBuilder(BIO_API_ROOT).get(path: 'ontologies', query: [ 'apikey': BIO_API
             def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000 // /
 
             exOnt.addNewSubmission([
-				     'released': lastSubDate,
-				    'download': submissions[0].ontology.links.download?.trim()
+              'released': lastSubDate,
+              'download': submissions[0].ontology.links.download?.trim()
             ])
 
             if(submissions[0].description) {
               exOnt.description = submissions[0].description
             }
+            if(submissions[0].homepage) {
+              exOnt.homepage = submissions[0].homepage
+            }
+            if(submissions[0].contact) {
+              exOnt.contact = []
+              submissions[0].contact.each { exOnt.contact << it.email }
+            }
 
             newO.add(exOnt.id)
-	    new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
-	      println "Updated " + exOnt.id
-	    }
+            new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
+              println "Updated " + exOnt.id
+            }
+
             oBase.saveOntology(exOnt)
           }
         }
