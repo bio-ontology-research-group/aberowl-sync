@@ -14,7 +14,7 @@ import groovy.json.*
 
 String BIO_API_ROOT = 'http://data.bioontology.org/'
 String BIO_API_KEY = '24e0413e-54e0-11e0-9d7b-005056aa3316'
-List<String> ABEROWL_API = ['http://aber-owl.net/service/api/', 'http://aber-owl.net:55555/api/']
+List<String> ABEROWL_API = ['http://aber-owl.net/service/api/']
 //String ABEROWL_API = 'http://aber-owl.net/service/api/'
 String OBOFOUNDRY_FILE = "http://www.obofoundry.org/registry/ontologies.jsonld"
 
@@ -26,12 +26,17 @@ def allOnts = oBase.allOntologies()
 def updated = []
 def updatedUrl = []
 
+HTTPBuilder builder = new HTTPBuilder()
+builder.getClient().getParams().setParameter("http.connection.timeout", new Integer(10*1000))
+builder.getClient().getParams().setParameter("http.socket.timeout", new Integer(30*1000))
+
 allOnts.each { oRec ->
+  println "Processing ${oRec.id}..."
   if(oRec.source == 'manual') {
-    return;
+
   } else if(oRec.source == 'bioportal') {
     try {
-      new HTTPBuilder().get( uri: BIO_API_ROOT + 'ontologies/' + oRec.id + '/submissions', query: [ 'apikey': BIO_API_KEY ] ) { eResp, submissions ->
+      builder.get( uri: BIO_API_ROOT + 'ontologies/' + oRec.id + '/submissions', query: [ 'apikey': BIO_API_KEY ] ) { eResp, submissions ->
         println '[' + eResp.status + '] ' + oRec.id
         if(!submissions[0]) {
           println "No releases"
@@ -40,11 +45,11 @@ allOnts.each { oRec ->
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
         def lastSubDate = dateFormat.parse(submissions[0].released).toTimestamp().getTime() / 1000; // /
-
         if(lastSubDate > oRec.lastSubDate) {
+	  println "New version found..."
           oRec.addNewSubmission([
-            'released': lastSubDate,
-		    'download': submissions[0].ontology.links.download?.trim()
+				  'released': lastSubDate,
+				 'download': submissions[0].ontology.links.download?.trim()
           ]) 
 
           if(submissions[0].description) {
@@ -59,8 +64,9 @@ allOnts.each { oRec ->
           }
 
           try {
+	    println "Reloading ${oRec.id} on AberOWL..."
             ABEROWL_API.each {
-              new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
+              builder.get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
                 println "Updated " + oRec.id
               }
             }
@@ -78,7 +84,8 @@ allOnts.each { oRec ->
             oRec.contact = []
             submissions[0].contact.each { oRec.contact << it.email }
           }
-          oBase.saveOntology(oRec)
+	  println "Downloaded, now saving..."
+	  oBase.saveOntology(oRec)
           println '[' + oRec.id + '] Added new metadata'
         } else {
           println '[' + oRec.id + '] Nothing new to report'
@@ -108,7 +115,7 @@ allOnts.each { oRec ->
 			       'download': purl
 			      ]) 
 	ABEROWL_API.each {
-	  new HTTPBuilder().get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
+	  builder.get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
 	    println "Updated " + oRec.id
 	  }
 	}
@@ -122,6 +129,11 @@ allOnts.each { oRec ->
 			      'released': (int) (System.currentTimeMillis() / 1000L), // current unix time (pretty disgusting line though) /
 			     'download': oRec.source?.trim()
 			    ]) 
+      ABEROWL_API.each {
+	builder.get( uri: it + 'reloadOntology.groovy', query: [ 'name': oRec.id ] ) { r, s ->
+	  println "Updated " + oRec.id
+	}
+      }
       oBase.saveOntology(oRec)
     } catch (Exception E) {
       println "Failure do download "+oRec.id+" from "+oRec.source
