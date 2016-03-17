@@ -52,15 +52,17 @@ println 'got the list'
             }
 
             newO.add(exOnt.id)
+            oBase.saveOntology(exOnt)
+
             new HTTPBuilder().get( uri: ABEROWL_API + 'reloadOntology.groovy', query: [ 'name': exOnt.id ] ) { r, s ->
               println "Updated " + exOnt.id
+              println s
             }
-
-            oBase.saveOntology(exOnt)
           }
         }
       } catch(groovyx.net.http.HttpResponseException e) {
         println "Ontology disappeared"
+        println e.getMessage()
       } catch(java.net.SocketException e) {
         println "idk"
       }
