@@ -27,8 +27,8 @@ def updated = []
 def updatedUrl = []
 
 HTTPBuilder builder = new HTTPBuilder()
-builder.getClient().getParams().setParameter("http.connection.timeout", new Integer(10*1000))
-builder.getClient().getParams().setParameter("http.socket.timeout", new Integer(30*1000))
+builder.getClient().getParams().setParameter("http.connection.timeout", new Integer(100*1000))
+builder.getClient().getParams().setParameter("http.socket.timeout", new Integer(300*1000))
 
 allOnts.each { oRec ->
   println "Processing ${oRec.id}..."
